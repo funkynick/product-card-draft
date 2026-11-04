@@ -1,0 +1,19 @@
+{
+  "seo_title": "данных нет",
+  "seo_description": "данных нет",
+  "search_queries": [],
+  "suits_for": "данных нет",
+  "solves": "данных нет",
+  "needs_clarification": [],
+  "status": "insufficient_data",
+  "name": "МК110-224.8Д.4Р [М01]",
+  "manufacturer": "ОВЕН",
+  "characteristics": [],
+  "missing_fields": [
+    "характеристики",
+    "описание"
+  ],
+  "problems": [
+    "Нет ни характеристик, ни описания: модель не вызывалась"
+  ]
+}
