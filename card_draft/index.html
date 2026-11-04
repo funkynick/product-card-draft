@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Черновик карточки товара</title>
+<style>
+  :root { --text: #1c2024; --muted: #60666d; --line: #d5d9de; --accent: #0b5cad; --bg: #f6f7f8; --error: #a4262c; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  h1 { grid-column: 1 / -1; margin: 0; font-size: 24px; }
+  form, section { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 20px; }
+  label { display: block; margin-bottom: 14px; font-weight: 600; font-size: 14px; }
+  input, textarea { display: block; width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: 15px/1.4 system-ui, sans-serif; }
+  textarea { resize: vertical; }
+  small { display: block; font-weight: 400; color: var(--muted); }
+  button { padding: 9px 16px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; font: 600 15px system-ui, sans-serif; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
+  button.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+  pre { margin: 12px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 14px/1.5 ui-monospace, Menlo, monospace; }
+  .error { color: var(--error); white-space: pre-line; }
+  .placeholder { color: var(--muted); }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Черновик карточки товара</h1>
+
+  <form id="form">
+    <label>Название
+      <input name="name" required>
+    </label>
+    <label>Производитель
+      <input name="manufacturer">
+    </label>
+    <label>Характеристики
+      <small>Каждая с новой строки: название: значение</small>
+      <textarea name="specs" rows="8" placeholder="Диапазон измерений: 0–1,6 МПа"></textarea>
+    </label>
+    <label>Описание или фрагмент паспорта
+      <textarea name="description" rows="7"></textarea>
+    </label>
+    <button id="submit" type="submit">Сделать черновик</button>
+  </form>
+
+  <section aria-live="polite">
+    <p id="placeholder" class="placeholder">Здесь появится черновик.</p>
+    <p id="error" class="error" hidden></p>
+    <button id="copy" class="secondary" type="button" hidden>Скопировать</button>
+    <pre id="result" hidden></pre>
+  </section>
+</main>
+
+<script>
+  const form = document.getElementById("form");
+  const submit = document.getElementById("submit");
+  const placeholder = document.getElementById("placeholder");
+  const errorBox = document.getElementById("error");
+  const result = document.getElementById("result");
+  const copy = document.getElementById("copy");
+
+  function parseSpecs(text) {
+    const specs = {};
+    for (const line of text.split("\n")) {
+      if (!line.trim()) continue;
+      const colon = line.indexOf(":");
+      if (colon === -1) specs[line.trim()] = null;
+      else specs[line.slice(0, colon).trim()] = line.slice(colon + 1).trim();
+    }
+    return specs;
+  }
+
+  function show({ errors, markdown }) {
+    placeholder.hidden = true;
+    errorBox.hidden = !errors;
+    errorBox.textContent = errors ? errors.join("\n") : "";
+    result.hidden = copy.hidden = !markdown;
+    result.textContent = markdown || "";
+    copy.textContent = "Скопировать";
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = new FormData(form);
+    submit.disabled = true;
+    submit.textContent = "Генерирую…";
+    try {
+      const response = await fetch("api/card", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.get("name"),
+          manufacturer: data.get("manufacturer"),
+          specs: parseSpecs(data.get("specs")),
+          description: data.get("description"),
+        }),
+      });
+      show(await response.json());
+    } catch {
+      show({ errors: ["Сервис недоступен, повторите попытку"] });
+    } finally {
+      submit.disabled = false;
+      submit.textContent = "Сделать черновик";
+    }
+  });
+
+  copy.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(result.textContent);
+    copy.textContent = "Скопировано";
+  });
+</script>
+</body>
+</html>
